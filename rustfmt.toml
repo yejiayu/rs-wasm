@@ -1,0 +1,46 @@
+# Use field initialize shorthand if possible.
+#
+# Default value: false
+# Possible values: true, false
+# Stable: Yes
+# false (default):
+# struct Foo {
+#     x: u32,
+#     y: u32,
+#     z: u32,
+# }
+#
+# fn main() {
+#     let x = 1;
+#     let y = 2;
+#     let z = 3;
+#     let a = Foo { x: x, y: y, z: z };
+# }
+# true:
+# struct Foo {
+#     x: u32,
+#     y: u32,
+#     z: u32,
+# }
+#
+# fn main() {
+#     let x = 1;
+#     let y = 2;
+#     let z = 3;
+#     let a = Foo { x, y, z };
+# }
+use_field_init_shorthand = true
+# Replace uses of the try! macro by the ? shorthand
+#
+# Default value: false
+# Possible values: true, false
+# Stable: Yes
+# false (default):
+# fn main() {
+#     let lorem = try!(ipsum.map(|dolor| dolor.sit()));
+# }
+# true:
+# fn main() {
+#     let lorem = ipsum.map(|dolor| dolor.sit())?;
+# }
+use_try_shorthand = true
