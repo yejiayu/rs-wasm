@@ -1,15 +1,9 @@
 mod errors;
-pub mod execution;
+mod execution;
+mod parser;
+pub mod primitives;
 
 pub use errors::WasmError;
+pub use parser::Reader;
 
-#[cfg(test)]
-mod tests {
-    use crate::execution;
-
-    #[test]
-    fn it_works() {
-        let code = include_bytes!("../scripts/hello.wasm");
-        execution::run(code).unwrap();
-    }
-}
+pub type WasmResult<T> = Result<T, WasmError>;
