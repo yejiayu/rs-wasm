@@ -3,9 +3,10 @@ use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum WasmError {
-    InvalidSection(i32),
+    InvalidSection(u32),
     InvalidMagicNumber(u32),
     InvalidVersion(u32),
+    InvalidType(i32),
     EOF,
 }
 
@@ -19,6 +20,7 @@ impl fmt::Display for WasmError {
                 write!(f, "invalid magic number {:?}", magic_number)
             }
             WasmError::InvalidVersion(version) => write!(f, "invalid version {:?}", version),
+            WasmError::InvalidType(t) => write!(f, "invalid type {:?}", t),
             WasmError::EOF => write!(f, "parser EOF"),
         }
     }

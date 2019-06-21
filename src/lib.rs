@@ -1,5 +1,4 @@
 mod errors;
-mod execution;
 mod parser;
 pub mod primitives;
 
