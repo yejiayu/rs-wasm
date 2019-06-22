@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Frame<'a> {
+pub enum Frame {
     Head { version: u32 },
-    Section { section: Section, payload: &'a [u8] },
+    Section(Section),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,11 +19,7 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Section {
-    Type {
-        form: Type,
-        params: Vec<Type>,
-        returns: Vec<Type>,
-    },
+    Type(Vec<SectionTypeEntity>),
     Import,
     Function,
     Table,
@@ -34,4 +30,11 @@ pub enum Section {
     Element,
     Code,
     Data,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SectionTypeEntity {
+    pub form: Type,
+    pub params: Vec<Type>,
+    pub returns: Vec<Type>,
 }

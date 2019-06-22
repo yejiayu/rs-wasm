@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <script>
+        const wasmMem = new WebAssembly.Memory({ initial: 1 });
+        const importObj = {
+            js: {
+                print: printStr,
+                mem: wasmMem,
+            }
+        };
+
+        fetch("func.wasm").then(res => res.arrayBuffer())
+            .then(bytes => WebAssembly.instantiate(bytes, importObj))
+            .then(res => res.instance.exports.hello())
+            .then(console.log)
+
+        // const table = new WebAssembly.Table({
+        //     element: "anyfunc",
+        //     initial: 2,
+        // });
+
+        // fetch("import_table.wasm").then(res => res.arrayBuffer())
+        //     .then(bytes => WebAssembly.instantiate(bytes, {
+        //         js: { table }
+        //     }))
+        //     .then(ins => {
+        //         console.log(table.get(0)());
+        //     });
+        function printStr(offset, length) {
+            const bytes = new Uint8Array(wasmMem.buffer, offset, length);
+            const str = new TextDecoder("utf-8").decode(bytes);
+            console.log(str);
+        }
+    </script>
+</body>
+
+</html>

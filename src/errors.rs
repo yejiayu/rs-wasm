@@ -7,6 +7,8 @@ pub enum WasmError {
     InvalidMagicNumber(u32),
     InvalidVersion(u32),
     InvalidType(i32),
+
+    InvalidLEB128,
     EOF,
 }
 
@@ -21,6 +23,8 @@ impl fmt::Display for WasmError {
             }
             WasmError::InvalidVersion(version) => write!(f, "invalid version {:?}", version),
             WasmError::InvalidType(t) => write!(f, "invalid type {:?}", t),
+
+            WasmError::InvalidLEB128 => write!(f, "invalid leb-128"),
             WasmError::EOF => write!(f, "parser EOF"),
         }
     }
