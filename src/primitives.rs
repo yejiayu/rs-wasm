@@ -21,7 +21,7 @@ pub enum Type {
 pub enum Section {
     Type(Vec<SectionTypeEntity>),
     Import,
-    Function,
+    Function(Vec<SectionFuncEntity>),
     Table,
     Memory,
     Global,
@@ -37,4 +37,9 @@ pub struct SectionTypeEntity {
     pub form: Type,
     pub params: Vec<Type>,
     pub returns: Vec<Type>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SectionFuncEntity {
+    pub signature_index: usize,
 }

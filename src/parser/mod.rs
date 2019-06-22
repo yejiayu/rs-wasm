@@ -4,7 +4,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 
 use crate::parser::bytes_reader::BytesReader;
-use crate::primitives::{Frame, Section, SectionTypeEntity, Type};
+use crate::primitives::{Frame, Section, SectionFuncEntity, SectionTypeEntity, Type};
 use crate::{WasmError, WasmResult};
 
 const WASM_MAGIC_NUMBER: u32 = 0x6d736100;
@@ -52,7 +52,7 @@ impl Parser {
         let section = match section_code {
             0x01 => self.section_type()?,
             0x02 => Section::Import,
-            0x03 => Section::Function,
+            0x03 => self.section_function()?,
             0x04 => Section::Table,
             0x05 => Section::Memory,
             0x06 => Section::Global,
@@ -75,6 +75,23 @@ impl Parser {
 
         let entries = parser_section_type_entries(&mut reader)?;
         Ok(Section::Type(entries))
+    }
+
+    fn section_function(&mut self) -> WasmResult<Section> {
+        let payload_len = self.reader.read_u7()? as usize;
+        let payload = self.reader.read_range(payload_len)?;
+
+        let mut reader = BytesReader::new(Bytes::from(payload), 0);
+
+        let count = reader.read_u32()? as usize;
+        let mut entries = Vec::with_capacity(count);
+        for _ in 0..count {
+            entries.push(SectionFuncEntity {
+                signature_index: reader.read_u32()? as usize,
+            });
+        }
+
+        Ok(Section::Function(entries))
     }
 }
 
@@ -142,7 +159,8 @@ mod tests {
         let code = Bytes::from(code.as_ref());
         let mut r = Parser::new(code);
         r.read().unwrap();
-        let s = r.read().unwrap();
-        println!("section {:?}", s);
+        r.read().unwrap();
+        let f = r.read().unwrap();
+        println!("func {:?}", f);
     }
 }
