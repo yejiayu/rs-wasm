@@ -100,9 +100,9 @@ pub enum Operator {
 
     // Numeric Instructions
     I32Const { val: i32 }, // 0x41
-    I64Const { val: i64 },              // 0x42
-    F32Const { val: f32 },              // 0x43
-    F64Const { val: f64 },              // 0x44
+    I64Const { val: i64 }, // 0x42
+    F32Const { val: f32 }, // 0x43
+    F64Const { val: f64 }, // 0x44
 
     I32Eqz, // 0x45
     I32Eq,  // 0x46

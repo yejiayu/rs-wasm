@@ -430,9 +430,18 @@ fn parser_operator(reader: &mut BytesReader) -> WasmResult<Operator> {
             let val = reader.read_var_i32()?;
             Operator::I32Const { val }
         }
-        0x42 => Operator::I64Const,
-        0x43 => Operator::F32Const,
-        0x44 => Operator::F64Const,
+        0x42 => {
+            let val = reader.read_var_i64()?;
+            Operator::I64Const { val }
+        }
+        0x43 => {
+            let val = reader.read_var_f32()?;
+            Operator::F32Const { val }
+        }
+        0x44 => {
+            let val = reader.read_var_f64()?;
+            Operator::F64Const { val }
+        }
 
         0x45 => Operator::I32Eqz,
         0x46 => Operator::I32Eq,
