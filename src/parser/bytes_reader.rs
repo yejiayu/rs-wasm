@@ -22,7 +22,7 @@ impl BytesReader {
         Ok(buf)
     }
 
-    pub fn read_u7(&mut self) -> WasmResult<u32> {
+    pub fn read_var_u8(&mut self) -> WasmResult<u32> {
         let byte = self.peek_byte(self.position)?;
         if (byte & 0x80) != 0 {
             return Err(WasmError::InvalidLEB128);
@@ -32,7 +32,7 @@ impl BytesReader {
         Ok(LittleEndian::read_u32(&[byte, 0, 0, 0]))
     }
 
-    pub fn read_i7(&mut self) -> WasmResult<i32> {
+    pub fn read_var_i8(&mut self) -> WasmResult<i32> {
         let byte = self.peek_byte(self.position)?;
         if (byte & 0x80) != 0 {
             return Err(WasmError::InvalidLEB128);
@@ -42,7 +42,7 @@ impl BytesReader {
         Ok(LittleEndian::read_i32(&[byte, 0, 0, 0]))
     }
 
-    pub fn read_u32(&mut self) -> WasmResult<u32> {
+    pub fn read_var_u32(&mut self) -> WasmResult<u32> {
         let byte = self.peek_byte(self.position)?;
         let mut bytes = vec![byte, 0, 0, 0];
         if (bytes[0] & 0x80) == 0 {
@@ -67,7 +67,7 @@ impl BytesReader {
         Ok(LittleEndian::read_u32(&bytes))
     }
 
-    pub fn read_i32(&mut self) -> WasmResult<i32> {
+    pub fn read_var_i32(&mut self) -> WasmResult<i32> {
         let byte = self.peek_byte(self.position)?;
         let mut bytes = vec![byte, 0, 0, 0];
         if (bytes[0] & 0x80) == 0 {
@@ -92,6 +92,11 @@ impl BytesReader {
         Ok(LittleEndian::read_i32(&bytes))
     }
 
+    pub fn read_u8(&mut self) -> WasmResult<u8> {
+        let n = self.code.get(self.position).ok_or(WasmError::EOF)?;
+        self.position += 1;
+        Ok(*n)
+    }
     fn peek_byte(&self, position: usize) -> WasmResult<u8> {
         let byte = self.code.get(position).ok_or(WasmError::EOF)?;
         Ok(*byte)
