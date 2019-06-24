@@ -1,11 +1,10 @@
 [package]
-name = "rust-wasm"
+name = "rs-wasm"
 version = "0.1.0"
 authors = ["yejiayu <yejiayu.fe@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-wasmparser = "0.30"
 log = "0.4"
 bytes = "0.4"
 byteorder = "1.3"
