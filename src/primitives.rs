@@ -1,10 +1,10 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Frame {
     Head { version: u32 },
     Section(Section),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Type {
     I32,
     I64,
@@ -17,7 +17,7 @@ pub enum Type {
     EmptyBlockType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum KindIndex {
     Type,
     Func,
@@ -28,7 +28,7 @@ pub enum KindIndex {
     Label,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Section {
     Type(Vec<SectionTypeEntity>),
     Import,
@@ -43,7 +43,7 @@ pub enum Section {
     Data(Vec<SectionDataEntity>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Operator {
     // Control Instructions
     Unreachable,               // 0x00
@@ -100,9 +100,9 @@ pub enum Operator {
 
     // Numeric Instructions
     I32Const { val: i32 }, // 0x41
-    I64Const,              // 0x42
-    F32Const,              // 0x43
-    F64Const,              // 0x44
+    I64Const { val: i64 },              // 0x42
+    F32Const { val: f32 },              // 0x43
+    F64Const { val: f64 },              // 0x44
 
     I32Eqz, // 0x45
     I32Eq,  // 0x46
@@ -237,45 +237,45 @@ pub enum Operator {
     F64ReinterpretI64, // 0xBF
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionTypeEntity {
     pub form: Type,
     pub params: Vec<Type>,
     pub returns: Vec<Type>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionFuncEntity {
     pub signature_index: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionExportEntity {
     pub name: String,
     pub kind: KindIndex,
     pub index: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionCodeEntity {
     pub locals: Vec<Type>,
     pub expr: Vec<Operator>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionMemoryEntity {
     pub initial: u32,
     pub max: Option<u32>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SectionDataEntity {
     pub memid: u32,
     pub expr: Vec<Operator>,
     pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct MemArg {
     pub align: u32,
     pub offset: u32,
