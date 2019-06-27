@@ -1,7 +1,11 @@
-#[derive(Debug, Clone)]
+use crate::errors::WasmError;
+
+#[derive(Debug)]
 pub enum Frame {
     Head { version: u32 },
-    Section(Section),
+    Section { section: Section },
+    ParserError { err: WasmError },
+    End,
 }
 
 #[derive(Debug, Clone)]
@@ -17,92 +21,214 @@ pub enum Type {
     EmptyBlockType,
 }
 
-#[derive(Debug, Clone)]
-pub enum KindIndex {
-    Type,
-    Func,
-    Table,
-    Memory,
-    Global,
-    Local,
-    Label,
+#[derive(Debug)]
+pub enum ExternalKind {
+    Func { signature_index: u32 },
+    Table { table_index: u32 },
+    Memory { mem_index: u32 },
+    Global { global_index: u32 },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
+pub enum ImportKind {
+    Func {
+        signature_index: u32,
+    },
+    Table {
+        elem_type: Type,
+        limit: ResizableLimit,
+    },
+    Memory {
+        limit: ResizableLimit,
+    },
+    Global {
+        global_arg: GlobalArg,
+    },
+}
+
+#[derive(Debug)]
+pub enum Mutability {
+    Const,
+    Var,
+}
+
+#[derive(Debug)]
 pub enum Section {
-    Type(Vec<SectionTypeEntity>),
-    Import,
-    Function(Vec<SectionFuncEntity>),
-    Table,
-    Memory(Vec<SectionMemoryEntity>),
-    Global,
-    Export(Vec<SectionExportEntity>),
-    Start,
-    Element,
-    Code(Vec<SectionCodeEntity>),
-    Data(Vec<SectionDataEntity>),
+    Custom { name: String, payload: Vec<u8> },
+    Type { entities: Vec<SectionTypeEntity> },
+    Import { entities: Vec<SectionImportEntity> },
+    Function { entities: Vec<SectionFuncEntity> },
+    Table { entities: Vec<SectionTableEntity> },
+    Memory { entities: Vec<SectionMemoryEntity> },
+    Global { entities: Vec<SectionGlobalEntity> },
+    Export { entities: Vec<SectionExportEntity> },
+    Start { signature_index: u32 },
+    Element { entities: Vec<SectionElemEntity> },
+    Code { entities: Vec<SectionCodeEntity> },
+    Data { entities: Vec<SectionDataEntity> },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Operator {
-    // Control Instructions
-    Unreachable,               // 0x00
-    Nop,                       // 0x01
-    Block { t: Type },         // 0x02
-    Loop { t: Type },          // 0x03
-    If { t: Type },            // 0x04
-    Else,                      // 0x05
-    End,                       // 0x0B
-    Br { label_index: u32 },   // 0x0C
-    BrIf { label_index: u32 }, // 0x0D
-    BrTable,                   // 0x0E
-    Return,                    // 0x0F
-    Call,                      // 0x10
-    CallIndirect,              // 0X11
+    /// Control Instructions
+    // trap immediately
+    Unreachable, // 0x00
+    // no operation
+    Nop, // 0x01
+    // begin a sequence of expressions, yielding 0 or 1 values
+    Block {
+        t: Type,
+    }, // 0x02
+    // begin a block which can also form control flow loops
+    Loop {
+        t: Type,
+    }, // 0x03
+    // begin if expression
+    If {
+        t: Type,
+    }, // 0x04
+    // begin else expression of if
+    Else, // 0x05
+    // end a block, loop, or if
+    End, // 0x0B
+    // break that targets an outer nested block
+    Br {
+        relative_depth: u32,
+    }, // 0x0C
+    // conditional break that targets an outer nested block
+    BrIf {
+        relative_depth: u32,
+    }, // 0x0D
+    // branch table control flow construct
+    BrTable {
+        // target entries that indicate an outer block or loop to which to break
+        target_table: Vec<u32>,
+        // an outer block or loop to which to break in the default case
+        default_target: u32,
+    }, // 0x0E
+    // return zero or one value from this function
+    Return, // 0x0F
+    // call a function by its index
+    Call {
+        function_index: u32,
+    }, // 0x10
+    // call a function indirect with an expected signature
+    CallIndirect {
+        type_index: u32,
+        reserved: u32,
+    }, // 0X11
 
     // Parametric Instructions
     Drop,   // 0x1A
     Select, // 0X1B
 
     // Variable Instructions¶
-    LocalGet { local_index: u32 },   // 0x20
-    LocalSet { local_index: u32 },   // 0x21
-    LocalTee { local_index: u32 },   // 0x22
-    GlobalGet { global_index: u32 }, // 0x23
-    GlobalSet { global_index: u32 }, // 0x24
+    LocalGet {
+        local_index: u32,
+    }, // 0x20
+    LocalSet {
+        local_index: u32,
+    }, // 0x21
+    LocalTee {
+        local_index: u32,
+    }, // 0x22
+    GlobalGet {
+        global_index: u32,
+    }, // 0x23
+    GlobalSet {
+        global_index: u32,
+    }, // 0x24
 
     // Memory Instructions
-    I32Load { memarg: MemArg },    // 0x28
-    I64Load { memarg: MemArg },    // 0x29
-    F32Load { memarg: MemArg },    // 0x2A
-    F64Load { memarg: MemArg },    // 0x2B
-    I32Load8s { memarg: MemArg },  // 0x2C
-    I32Load8u { memarg: MemArg },  // 0x2D
-    I32Load16s { memarg: MemArg }, // 0x2E
-    I32Load16u { memarg: MemArg }, // 0x2F
-    I64Load8s { memarg: MemArg },  // 0x30
-    I64Load8u { memarg: MemArg },  // 0x31
-    I64Load16s { memarg: MemArg }, // 0x32
-    I64Load16u { memarg: MemArg }, // 0x33
-    I64Load32s { memarg: MemArg }, // 0x34
-    I64Load32u { memarg: MemArg }, // 0x35
-    I32Store { memarg: MemArg },   // 0x36
-    I64Store { memarg: MemArg },   // 0x37
-    F32Store { memarg: MemArg },   // 0x38
-    F64Store { memarg: MemArg },   // 0x39
-    I32Store8 { memarg: MemArg },  // 0x3A
-    I32Store16 { memarg: MemArg }, // 0x3B
-    I64Store8 { memarg: MemArg },  // 0x3C
-    I64Store16 { memarg: MemArg }, // 0x3D
-    I64Store32 { memarg: MemArg }, // 0x3E
-    MemorySize { size: u32 },      // 0x3F
-    MemoryGrow { grow: u32 },      // 0x40
+    I32Load {
+        memarg: MemArg,
+    }, // 0x28
+    I64Load {
+        memarg: MemArg,
+    }, // 0x29
+    F32Load {
+        memarg: MemArg,
+    }, // 0x2A
+    F64Load {
+        memarg: MemArg,
+    }, // 0x2B
+    I32Load8s {
+        memarg: MemArg,
+    }, // 0x2C
+    I32Load8u {
+        memarg: MemArg,
+    }, // 0x2D
+    I32Load16s {
+        memarg: MemArg,
+    }, // 0x2E
+    I32Load16u {
+        memarg: MemArg,
+    }, // 0x2F
+    I64Load8s {
+        memarg: MemArg,
+    }, // 0x30
+    I64Load8u {
+        memarg: MemArg,
+    }, // 0x31
+    I64Load16s {
+        memarg: MemArg,
+    }, // 0x32
+    I64Load16u {
+        memarg: MemArg,
+    }, // 0x33
+    I64Load32s {
+        memarg: MemArg,
+    }, // 0x34
+    I64Load32u {
+        memarg: MemArg,
+    }, // 0x35
+    I32Store {
+        memarg: MemArg,
+    }, // 0x36
+    I64Store {
+        memarg: MemArg,
+    }, // 0x37
+    F32Store {
+        memarg: MemArg,
+    }, // 0x38
+    F64Store {
+        memarg: MemArg,
+    }, // 0x39
+    I32Store8 {
+        memarg: MemArg,
+    }, // 0x3A
+    I32Store16 {
+        memarg: MemArg,
+    }, // 0x3B
+    I64Store8 {
+        memarg: MemArg,
+    }, // 0x3C
+    I64Store16 {
+        memarg: MemArg,
+    }, // 0x3D
+    I64Store32 {
+        memarg: MemArg,
+    }, // 0x3E
+    MemorySize {
+        size: u32,
+    }, // 0x3F
+    MemoryGrow {
+        grow: u32,
+    }, // 0x40
 
     // Numeric Instructions
-    I32Const { val: i32 }, // 0x41
-    I64Const { val: i64 }, // 0x42
-    F32Const { val: f32 }, // 0x43
-    F64Const { val: f64 }, // 0x44
+    I32Const {
+        val: i32,
+    }, // 0x41
+    I64Const {
+        val: i64,
+    }, // 0x42
+    F32Const {
+        val: u32,
+    }, // 0x43
+    F64Const {
+        val: u64,
+    }, // 0x44
 
     I32Eqz, // 0x45
     I32Eq,  // 0x46
@@ -237,46 +363,90 @@ pub enum Operator {
     F64ReinterpretI64, // 0xBF
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionTypeEntity {
     pub form: Type,
     pub params: Vec<Type>,
     pub returns: Vec<Type>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionFuncEntity {
     pub signature_index: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionExportEntity {
     pub name: String,
-    pub kind: KindIndex,
-    pub index: u32,
+    pub kind: ExternalKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionCodeEntity {
     pub locals: Vec<Type>,
-    pub expr: Vec<Operator>,
+    pub code: Vec<Operator>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionMemoryEntity {
-    pub initial: u32,
-    pub max: Option<u32>,
+    pub limit: ResizableLimit,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct SectionDataEntity {
     pub memid: u32,
     pub expr: Vec<Operator>,
     pub data: Vec<u8>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
+pub struct SectionImportEntity {
+    pub mod_name: String,
+    pub field_name: String,
+    pub kind: ImportKind,
+}
+
+#[derive(Debug)]
+pub struct SectionTableEntity {
+    pub elem_type: Type,
+    pub limit: ResizableLimit,
+}
+
+// Each global_variable declares a single global variable of a given type, mutability and with the given initializer.
+#[derive(Debug)]
+pub struct SectionGlobalEntity {
+    pub global_arg: GlobalArg,
+    // the initial value of the global
+    pub expr: Vec<Operator>,
+}
+
+#[derive(Debug)]
+pub struct SectionElemEntity {
+    // the table index (0 in the MVP)
+    pub table_index: u32,
+    // an i32 initializer expression that computes the offset at which to place the elements
+    pub offset: Vec<Operator>,
+    // 	number of elements to follow
+    pub elems: Vec<u32>,
+}
+
+#[derive(Debug)]
 pub struct MemArg {
     pub align: u32,
     pub offset: u32,
+}
+
+#[derive(Debug)]
+pub struct ResizableLimit {
+    pub initial: u32,
+    pub max: Option<u32>,
+}
+
+#[derive(Debug)]
+// The description of a global variable.
+pub struct GlobalArg {
+    // type of the value
+    pub content_type: Type,
+    // 0 if immutable, 1 if mutable
+    pub mutability: Mutability,
 }
